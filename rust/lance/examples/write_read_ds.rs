@@ -8,21 +8,30 @@ use arrow::record_batch::{RecordBatch, RecordBatchIterator};
 use futures::StreamExt;
 use lance::dataset::{WriteMode, WriteParams};
 use lance::Dataset;
+use lance_file::version::LanceFileVersion;
 use std::sync::Arc;
 // Writes sample dataset to the given path
 async fn write_dataset(data_path: &str) {
     // Define new schema
     let schema = Arc::new(Schema::new(vec![
-        Field::new("key", DataType::UInt32, false),
-        Field::new("value", DataType::UInt32, false),
+        // Field::new("key", DataType::UInt32, false),
+        // Field::new("value", DataType::UInt32, false),
+        Field::new("name", DataType::Utf8, false)
     ]));
 
     // Create new record batches
     let batch = RecordBatch::try_new(
         schema.clone(),
+        // vec![
+        //     // Arc::new(UInt32Array::from(vec![1, 2, 3, 4, 5, 6])),
+        //     // Arc::new(UInt32Array::from(vec![6, 7, 8, 9, 10, 11])),
+        // ],
         vec![
-            Arc::new(UInt32Array::from(vec![1, 2, 3, 4, 5, 6])),
-            Arc::new(UInt32Array::from(vec![6, 7, 8, 9, 10, 11])),
+            Arc::new(arrow::array::StringArray::from(
+                (0..30000)
+                    .map(|i| (i % 256).to_string())
+                    .collect::<Vec<String>>()
+            )),
         ],
     )
     .unwrap();
@@ -32,6 +41,7 @@ async fn write_dataset(data_path: &str) {
     // Define write parameters (e.g. overwrite dataset)
     let write_params = WriteParams {
         mode: WriteMode::Overwrite,
+        data_storage_version: Some(LanceFileVersion::V2_1),
         ..Default::default()
     };
 
